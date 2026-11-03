@@ -12,7 +12,7 @@ VPC multi-AZ con subnets públicas (/24, solo ALB y NAT) y privadas (/20, nodos 
 | `enable_flow_logs` | bool | `true` | Flow Logs a CloudWatch |
 | `flow_logs_retention_days` | number | `30` | Retención |
 
-**Outputs:** `vpc_id`, `vpc_cidr_block`, `public_subnet_ids`, `private_subnet_ids`, `nat_public_ips`.
+**Outputs:** `vpc_id`, `private_subnet_ids`, `nat_public_ips`.
 
 ```hcl
 module "network" {

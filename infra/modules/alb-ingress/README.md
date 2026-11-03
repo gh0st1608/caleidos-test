@@ -16,6 +16,6 @@ Tier **edge** del cluster:
 | `backend_ports` | `[8080]` | Puertos de los pods |
 | `chart_version` | `3.6.0` | Versión del controlador |
 
-**Outputs:** `alb_security_group_id`, `alb_security_group_name`, `controller_role_arn`.
+**Outputs:** `alb_security_group_name`.
 
 Requiere el provider `helm` configurado por el stack consumidor.

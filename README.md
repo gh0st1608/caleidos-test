@@ -37,7 +37,7 @@ flowchart LR
 |---|---|
 | Red | VPC /16 en 3 AZs. Subnets públicas /24 (solo ALB y NAT) y privadas /20 (nodos y pods). Un **NAT Gateway por AZ**, cada uno con su tabla de ruteo, para que una AZ caída no deje sin egreso a las demás. VPC Flow Logs. |
 | Seguridad de red (por tier) | **edge** (ALB: 80/443 desde Internet y salida solo hacia nodes:8080) → **nodes** (8080 solo desde edge; tráfico entre nodos) ↔ **control-plane** (443 desde nodes). El SG por defecto queda sin reglas. En Kubernetes, NetworkPolicy *deny-all* más una regla que solo permite el puerto 8080 desde la VPC. |
-| Cómputo | EKS 1.35 con **Managed Node Group** (3× t3.medium, uno por AZ, autoscaling group de 3 a 6 nodos). Launch Template con IMDSv2 (hop limit 1), EBS cifrado y acceso por SSM en lugar de SSH. |
+| Cómputo | EKS 1.35 con **Managed Node Group** (3× t3.medium, uno por AZ; `max_size` 6 deja margen para escalar nodos a mano o con un autoscaler futuro). Launch Template con IMDSv2 (hop limit 1), EBS cifrado y acceso por SSM en lugar de SSH. |
 | Acceso | EKS Access Entries (sin `aws-auth`). El AWS Load Balancer Controller usa **Pod Identity** y la app no tiene credenciales AWS. |
 | Aplicación | `nginx-unprivileged` fijado por digest, non-root, root FS de solo lectura, PSS `restricted`, topology spread por AZ y PDB. |
 | Exposición | Ingress, que el AWS Load Balancer Controller convierte en un ALB con `target-type: ip`: el ALB balancea **por request** directo a los pods. HTTPS opcional con ACM (componente `https`). |
@@ -149,8 +149,9 @@ En el navegador, `http://<alb-hostname>` muestra la página de nginx con el **no
 ### 5.2 Escalamiento automático (HPA) con stress-ng
 
 ```bash
-# Terminal 1: observar
-kubectl -n acme-txn get hpa,pods -w
+# Terminal 1: observar (kubectl -w acepta un solo tipo de recurso)
+kubectl -n acme-txn get hpa txn-web -w
+# Terminal 1b (opcional): kubectl -n acme-txn get pods -o wide -w
 
 # Terminal 2: generar carga dentro de los pods (sidecar "stress")
 bash scripts/demo-hpa.sh cpu 240        # o: memory 240

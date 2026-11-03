@@ -21,7 +21,7 @@ spec:
   ingress:
     - from:
         - ipBlock:
-            cidr: 10.40.0.0/16 # CIDR de la VPC (las ENIs del ALB viven en las subnets públicas)
+            cidr: 10.40.0.0/16 # = vpc_cidr de terraform.tfvars (las ENIs del ALB viven en las subnets públicas)
       ports:
         - protocol: TCP
           port: 8080

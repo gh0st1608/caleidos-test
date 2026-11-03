@@ -18,4 +18,4 @@ Cluster EKS con:
 | `addons`, `addon_configurations` | Add-ons y su configuración |
 | `cluster_log_types`, `log_retention_days` | Logging |
 
-**Outputs:** `cluster_name`, `cluster_endpoint`, `cluster_certificate_authority_data`, `cluster_security_group_id`, `node_security_group_id`, `node_role_arn`, `node_group_name` y `addons_ready`.
+**Outputs:** `cluster_name`, `cluster_endpoint`, `cluster_certificate_authority_data` y `node_security_group_id`.
