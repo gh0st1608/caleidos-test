@@ -24,7 +24,7 @@ resource "aws_vpc_security_group_ingress_rule" "alb_listeners" {
   ip_protocol       = "tcp"
   from_port         = each.value[0]
   to_port           = each.value[0]
-  description       = "Clientes -> ALB :${each.value[0]}"
+  description       = "Clientes to ALB :${each.value[0]}"
 }
 
 resource "aws_vpc_security_group_egress_rule" "alb_to_pods" {
@@ -35,7 +35,7 @@ resource "aws_vpc_security_group_egress_rule" "alb_to_pods" {
   ip_protocol                  = "tcp"
   from_port                    = tonumber(each.key)
   to_port                      = tonumber(each.key)
-  description                  = "ALB -> pods (target-type ip) :${each.key}"
+  description                  = "ALB to pods (target-type ip) :${each.key}"
 }
 
 resource "aws_vpc_security_group_ingress_rule" "pods_from_alb" {
@@ -46,7 +46,7 @@ resource "aws_vpc_security_group_ingress_rule" "pods_from_alb" {
   ip_protocol                  = "tcp"
   from_port                    = tonumber(each.key)
   to_port                      = tonumber(each.key)
-  description                  = "ALB -> pods :${each.key}"
+  description                  = "ALB to pods :${each.key}"
 }
 
 # ---------------------------------------------------------------------------

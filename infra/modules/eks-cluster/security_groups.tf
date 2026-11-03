@@ -24,7 +24,7 @@ resource "aws_vpc_security_group_ingress_rule" "cluster_from_nodes_https" {
   ip_protocol                  = "tcp"
   from_port                    = 443
   to_port                      = 443
-  description                  = "Nodes -> API server"
+  description                  = "Nodes to API server"
 }
 
 resource "aws_vpc_security_group_egress_rule" "cluster_to_nodes" {
@@ -33,7 +33,7 @@ resource "aws_vpc_security_group_egress_rule" "cluster_to_nodes" {
   ip_protocol                  = "tcp"
   from_port                    = 1025
   to_port                      = 65535
-  description                  = "API server -> kubelet y webhooks"
+  description                  = "API server to kubelet y webhooks"
 }
 
 # --- nodes ------------------------------------------------------------------
@@ -41,7 +41,7 @@ resource "aws_vpc_security_group_ingress_rule" "nodes_from_self" {
   security_group_id            = aws_security_group.nodes.id
   referenced_security_group_id = aws_security_group.nodes.id
   ip_protocol                  = "-1"
-  description                  = "Node <-> node / pod <-> pod (CoreDNS, servicios internos)"
+  description                  = "Node to node y pod to pod (CoreDNS, servicios internos)"
 }
 
 resource "aws_vpc_security_group_ingress_rule" "nodes_from_cluster" {
@@ -51,7 +51,7 @@ resource "aws_vpc_security_group_ingress_rule" "nodes_from_cluster" {
   ip_protocol                  = "tcp"
   from_port                    = 1025
   to_port                      = 65535
-  description                  = "API server -> kubelet (10250) y webhooks (ej. LBC 9443)"
+  description                  = "API server to kubelet (10250) y webhooks (ej. LBC 9443)"
 }
 
 resource "aws_vpc_security_group_ingress_rule" "nodes_from_cluster_https" {
@@ -60,7 +60,7 @@ resource "aws_vpc_security_group_ingress_rule" "nodes_from_cluster_https" {
   ip_protocol                  = "tcp"
   from_port                    = 443
   to_port                      = 443
-  description                  = "API server -> webhooks en 443"
+  description                  = "API server to webhooks en 443"
 }
 
 # Egreso a Internet vía NAT: pull de imágenes, APIs de AWS y registro en el cluster.
