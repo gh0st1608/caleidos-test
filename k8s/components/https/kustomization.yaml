@@ -1,0 +1,27 @@
+# HTTPS en el ALB. Requiere un certificado ACM emitido para el host indicado:
+# el controlador lo descubre automáticamente por el hostname de spec.tls.
+# Uso: descomentar en el overlay y reemplazar el host (ver README).
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+patches:
+  - target:
+      kind: Ingress
+      name: txn-web
+    patch: |-
+      - op: replace
+        path: /metadata/annotations/alb.ingress.kubernetes.io~1listen-ports
+        value: '[{"HTTP": 80}, {"HTTPS": 443}]'
+      - op: add
+        path: /metadata/annotations/alb.ingress.kubernetes.io~1ssl-redirect
+        value: "443"
+      - op: add
+        path: /metadata/annotations/alb.ingress.kubernetes.io~1ssl-policy
+        value: ELBSecurityPolicy-TLS13-1-2-2021-06
+      - op: add
+        path: /spec/tls
+        value:
+          - hosts: ["txn.example.com"]
+      - op: add
+        path: /spec/rules/0/host
+        value: txn.example.com

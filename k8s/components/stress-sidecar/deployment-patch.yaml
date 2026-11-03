@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: txn-web
+  annotations:
+    checkov.io/skip2: CKV_K8S_8=Sidecar de demo (solo dev) sin puerto que sondear.
+    checkov.io/skip3: CKV_K8S_9=Sidecar de demo (solo dev) sin puerto que sondear.
+spec:
+  template:
+    spec:
+      containers:
+        - name: stress
+          # Imagen publicada por el autor de stress-ng, fijada a un build concreto.
+          image: colinianking/stress-ng:d725b5d290ced7ca72e95aab09d7d9be06d16f06@sha256:2732faddb8d356d7956e59a6600f1d238e1133b29d0d38f4ef4942a107ffcecd
+          imagePullPolicy: IfNotPresent
+          command: ["sleep", "infinity"]
+          workingDir: /tmp
+          # Sus requests cuentan en la utilización del Pod que evalúa el HPA (100m+50m CPU).
+          resources:
+            requests:
+              cpu: 50m
+              memory: 32Mi
+            limits:
+              cpu: 500m
+              memory: 384Mi
+          securityContext:
+            runAsUser: 65534
+            runAsGroup: 65534
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp

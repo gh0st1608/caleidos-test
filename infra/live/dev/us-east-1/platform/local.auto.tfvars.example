@@ -1,0 +1,5 @@
+# Copiar a local.auto.tfvars (ignorado por git) si aplicas desde tu laptop.
+# El rol de plan necesita leer el cluster; el de apply, ser admin si el cluster
+# lo creó otro principal (EKS solo da admin automático al creador).
+eks_viewer_principal_arns = ["arn:aws:iam::<ACCOUNT_ID>:role/acme-txn-gha-plan"]
+eks_admin_principal_arns  = ["arn:aws:iam::<ACCOUNT_ID>:role/acme-txn-gha-apply"]

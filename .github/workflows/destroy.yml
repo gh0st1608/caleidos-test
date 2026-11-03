@@ -1,0 +1,51 @@
+# Destrucción manual del entorno (control de costos tras la demo).
+name: destroy
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Escribe "destroy-dev" para confirmar'
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: terraform-dev
+  cancel-in-progress: false
+
+jobs:
+  destroy:
+    if: inputs.confirm == 'destroy-dev'
+    runs-on: ubuntu-24.04
+    environment: dev
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      TF_IN_AUTOMATION: "true"
+      TF_INPUT: "false"
+      STACK_DIR: infra/live/dev/us-east-1/platform
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      TF_VAR_eks_viewer_principal_arns: '["${{ vars.AWS_PLAN_ROLE_ARN }}"]'
+      # Solo si el cluster lo creó otro principal (p. ej. tu laptop); vacío = []
+      TF_VAR_eks_admin_principal_arns: ${{ vars.EKS_ADMIN_PRINCIPAL_ARNS || '[]' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_APPLY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: "1.13.0"
+          terraform_wrapper: false
+
+      - name: init
+        run: terraform -chdir="${STACK_DIR}" init -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}"
+
+      - name: destroy (app primero, luego infraestructura)
+        run: bash scripts/destroy.sh -auto-approve

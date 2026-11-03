@@ -1,0 +1,75 @@
+# =============================================================================
+# Terraform
+# =============================================================================
+# Providers y módulos descargados (se regeneran con `terraform init`).
+# .terraform.lock.hcl SÍ se versiona: fija los hashes de los providers.
+**/.terraform/*
+
+# State: contiene IDs de cuenta, ARNs y a veces secretos en texto plano.
+# El state real vive en S3 (backend remoto); el del bootstrap queda solo en local.
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+# Planes: binarios que pueden incluir valores sensibles.
+tfplan
+*.tfplan
+*.tfplan.json
+plan.json
+
+# Variables: se ignoran todas por defecto...
+*.tfvars
+*.tfvars.json
+# ...salvo las plantillas y los valores del entorno sin secretos que el pipeline necesita.
+# Los ARNs y valores propios de la cuenta van en `*.auto.tfvars` locales (ignorados).
+!*.tfvars.example
+!infra/live/dev/us-east-1/platform/terraform.tfvars
+
+# Configuración de backend con el nombre real del bucket.
+backend.hcl
+!backend.hcl.example
+
+# Overrides locales.
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Logs y CLI config (puede contener tokens de Terraform Cloud).
+crash.log
+crash.*.log
+.terraformrc
+terraform.rc
+
+# =============================================================================
+# Credenciales y secretos
+# =============================================================================
+.env
+.env.*
+!.env.example
+.aws/
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+id_rsa*
+kubeconfig
+*.kubeconfig
+secrets/
+*.secret.yaml
+
+# =============================================================================
+# Artefactos locales
+# =============================================================================
+rendered/
+.venv/
+node_modules/
+
+# Archivos temporales.
+docs/**/.$*
+
+# SO / editor
+.DS_Store
+Thumbs.db
+*.swp

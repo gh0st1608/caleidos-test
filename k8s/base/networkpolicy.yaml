@@ -1,0 +1,27 @@
+# Aplicadas por el VPC CNI (enableNetworkPolicy=true en el add-on, ver Terraform).
+# 1) Deny-all de ingreso en el namespace.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+spec:
+  podSelector: {}
+  policyTypes: ["Ingress"]
+---
+# 2) Solo el ALB (IPs dentro de la VPC) y los health checks alcanzan el puerto de la app.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: txn-web-allow-alb
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: txn-web
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - ipBlock:
+            cidr: 10.40.0.0/16 # CIDR de la VPC (las ENIs del ALB viven en las subnets públicas)
+      ports:
+        - protocol: TCP
+          port: 8080

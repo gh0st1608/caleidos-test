@@ -1,0 +1,10 @@
+# Componente SOLO para entornos no productivos: agrega un sidecar con stress-ng
+# para la demo de autoscaling (kubectl exec ... -c stress -- stress-ng ...).
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+patches:
+  - path: deployment-patch.yaml
+    target:
+      kind: Deployment
+      name: txn-web

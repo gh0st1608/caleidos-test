@@ -1,0 +1,102 @@
+# Validación de Pull Requests: calidad y seguridad de Terraform y Kubernetes. No toca AWS.
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  terraform:
+    name: terraform (fmt · validate · test · tflint · checkov)
+    runs-on: ubuntu-24.04
+    env:
+      TF_IN_AUTOMATION: "true"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: "1.13.0"
+          terraform_wrapper: false
+
+      - name: fmt
+        run: terraform fmt -check -recursive -diff infra
+
+      - name: validate
+        run: |
+          for dir in infra/modules/* infra/live/dev/us-east-1/platform; do
+            terraform -chdir="${dir}" init -backend=false >/dev/null
+            terraform -chdir="${dir}" validate
+          done
+
+      - name: test
+        run: terraform -chdir=infra/modules/network test
+
+      - uses: terraform-linters/setup-tflint@6ffdbaa3be476b3431f7275c26966ef32ff60337 # v6.3.2
+        with:
+          tflint_version: v0.64.0
+
+      - name: tflint
+        working-directory: infra
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          tflint --init --config "${GITHUB_WORKSPACE}/.tflint.hcl"
+          tflint --recursive --config "${GITHUB_WORKSPACE}/.tflint.hcl" --format compact
+
+      # Las excepciones viven junto al código (#checkov:skip=ID:razón).
+      - name: checkov
+        run: |
+          pip install --quiet checkov==3.3.29
+          checkov -d infra --framework terraform --skip-path .terraform --compact --quiet
+
+  kubernetes:
+    name: kubernetes (kustomize · kubeconform · checkov)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: render
+        run: kubectl kustomize k8s/overlays/dev > rendered.yaml
+
+      - name: kubeconform (checksum verificado)
+        env:
+          VERSION: v0.8.0
+        run: |
+          base="https://github.com/yannh/kubeconform/releases/download/${VERSION}"
+          curl -sSfLO "${base}/kubeconform-linux-amd64.tar.gz"
+          curl -sSfLO "${base}/CHECKSUMS"
+          sha256sum --check --ignore-missing CHECKSUMS
+          tar -xzf kubeconform-linux-amd64.tar.gz kubeconform
+          ./kubeconform -strict -summary rendered.yaml
+
+      - name: checkov
+        run: |
+          pip install --quiet checkov==3.3.29
+          checkov -f rendered.yaml --framework kubernetes --compact --quiet
+
+  secrets:
+    name: secret scan (gitleaks)
+    runs-on: ubuntu-24.04
+    env:
+      VERSION: 8.30.1
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: gitleaks (checksum verificado)
+        run: |
+          base="https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}"
+          curl -sSfLO "${base}/gitleaks_${VERSION}_linux_x64.tar.gz"
+          curl -sSfLO "${base}/gitleaks_${VERSION}_checksums.txt"
+          sha256sum --check --ignore-missing "gitleaks_${VERSION}_checksums.txt"
+          tar -xzf "gitleaks_${VERSION}_linux_x64.tar.gz" gitleaks
+          ./gitleaks git --redact --no-banner --exit-code 1 .

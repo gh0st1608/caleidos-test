@@ -1,0 +1,27 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+
+components:
+  - ../../components/stress-sidecar
+  # - ../../components/https   # habilitar con un certificado ACM y dominio propio
+
+labels:
+  - pairs:
+      environment: dev
+    includeSelectors: false
+
+patches:
+  # SG del tier edge creado por Terraform (output alb_security_group_name).
+  - target:
+      kind: Ingress
+      name: txn-web
+    patch: |-
+      - op: add
+        path: /metadata/annotations/alb.ingress.kubernetes.io~1security-groups
+        value: acme-txn-dev-alb
+      - op: add
+        path: /metadata/annotations/alb.ingress.kubernetes.io~1tags
+        value: Environment=dev,Application=acme-txn,ManagedBy=aws-load-balancer-controller

@@ -1,0 +1,35 @@
+# Plantilla de nginx: la imagen oficial ejecuta envsubst sobre /etc/nginx/templates/*.template
+# al arrancar, reemplazando ${POD_NAME}, ${POD_IP} y ${NODE_NAME} (Downward API).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: txn-web-nginx
+data:
+  default.conf.template: |
+    server {
+      listen 8080;
+      server_name _;
+      server_tokens off;
+
+      add_header X-Served-By "${POD_NAME}" always;
+      add_header X-Content-Type-Options "nosniff" always;
+      add_header Cache-Control "no-store" always;
+
+      location = /healthz {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+      }
+
+      # Endpoint de texto plano para la demo de balanceo con curl.
+      location = /whoami {
+        default_type text/plain;
+        return 200 "pod=${POD_NAME} ip=${POD_IP} node=${NODE_NAME}\n";
+      }
+
+      # Página web: se refresca cada 2s para ver en el navegador cómo cambia el Pod que responde.
+      location / {
+        default_type text/html;
+        return 200 '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta http-equiv="refresh" content="2"><title>ACME Transactions</title><style>body{font-family:system-ui,sans-serif;background:#0f172a;color:#e2e8f0;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}main{text-align:center;padding:2rem;border:1px solid #334155;border-radius:12px}h1{color:#38bdf8;margin-top:0}code{display:block;font-size:1.6rem;color:#facc15;margin:1rem 0}</style></head><body><main><h1>ACME Transaction Platform</h1><p>Respuesta servida por el Pod</p><code>${POD_NAME}</code><p>IP ${POD_IP} &middot; Nodo ${NODE_NAME}</p></main></body></html>';
+      }
+    }
