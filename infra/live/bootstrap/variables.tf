@@ -26,6 +26,18 @@ variable "github_repository" {
   }
 }
 
+variable "github_owner_id" {
+  description = "ID numérico del owner en GitHub. GitHub firma el sub del token OIDC como repo:owner@ID/repo@ID:..."
+  type        = string
+  default     = ""
+}
+
+variable "github_repository_id" {
+  description = "ID numérico del repositorio en GitHub (ver github_owner_id). Vacío = solo formato org/repo."
+  type        = string
+  default     = ""
+}
+
 variable "github_environments" {
   description = "GitHub Environments protegidos que pueden asumir el rol de apply."
   type        = list(string)

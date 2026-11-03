@@ -36,6 +36,15 @@ locals {
   oidc_arn = var.create_github_oidc_provider ? aws_iam_openid_connect_provider.github[0].arn : (
     "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/${local.oidc_host}"
   )
+
+  # Prefijos de sub aceptados: org/repo y, si se conocen los IDs, org@ID/repo@ID
+  # (formato inmutable: un repo renombrado o recreado con el mismo nombre no hereda la confianza).
+  github_owner = split("/", var.github_repository)[0]
+  github_repo  = split("/", var.github_repository)[1]
+  github_subjects = compact([
+    "repo:${var.github_repository}",
+    var.github_owner_id != "" && var.github_repository_id != "" ? "repo:${local.github_owner}@${var.github_owner_id}/${local.github_repo}@${var.github_repository_id}" : "",
+  ])
 }
 
 # ---------------------------------------------------------------------------
@@ -159,10 +168,9 @@ resource "aws_iam_role" "plan" {
       Condition = {
         StringEquals = { "${local.oidc_host}:aud" = "sts.amazonaws.com" }
         StringLike = {
-          "${local.oidc_host}:sub" = [
-            "repo:${var.github_repository}:pull_request",
-            "repo:${var.github_repository}:ref:refs/heads/main",
-          ]
+          "${local.oidc_host}:sub" = flatten([
+            for subject in local.github_subjects : ["${subject}:pull_request", "${subject}:ref:refs/heads/main"]
+          ])
         }
       }
     }]
@@ -195,7 +203,9 @@ resource "aws_iam_role" "apply" {
       Condition = {
         StringEquals = {
           "${local.oidc_host}:aud" = "sts.amazonaws.com"
-          "${local.oidc_host}:sub" = [for env in var.github_environments : "repo:${var.github_repository}:environment:${env}"]
+          "${local.oidc_host}:sub" = flatten([
+            for subject in local.github_subjects : [for env in var.github_environments : "${subject}:environment:${env}"]
+          ])
         }
       }
     }]
